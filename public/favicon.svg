@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+  <!-- Black hole center -->
+  <circle cx="16" cy="16" r="4" fill="#000000"/>
+
+  <!-- Accretion disk rings -->
+  <circle cx="16" cy="16" r="5" fill="#222222"/>
+  <circle cx="16" cy="16" r="6" fill="#444444"/>
+  <circle cx="16" cy="16" r="7" fill="#666666"/>
+
+  <!-- Small asteroid -->
+  <circle cx="24" cy="8" r="1.5" fill="#888888"/>
+
+  <!-- Minimal trail effect -->
+  <path d="M24 8 L28 4" stroke="#888888" stroke-width="0.5" opacity="0.5"/>
+</svg>
