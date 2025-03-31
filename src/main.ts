@@ -33,6 +33,7 @@ interface Star {
   phase: number
   brightness: number
   trail?: number // Make trail optional for compatibility with existing code
+  distanceFactor?: number
 }
 
 interface ShootingStar {
@@ -100,8 +101,11 @@ interface Spaceship {
   let holeY = canvas.height / 2
   const blackHoleRadius = 50
 
+  // Add background rotation variable
+  let backgroundRotation = 0
+
   // Generate static nebula effects
-  const nebulae: { x: number; y: number; size: number; baseHue: number }[] = []
+  const nebulae: { x: number; y: number; size: number; baseHue: number; distanceFactor?: number }[] = []
   const nebulaCount = 6
 
   for (let i = 0; i < nebulaCount; i++) {
@@ -114,23 +118,36 @@ interface Spaceship {
     // Random size for the nebula
     const size = canvas.width * (0.15 + Math.random() * 0.25)
 
+    // Calculate a distance factor for parallax effect (0.5 to 1.0)
+    // Closer to the center rotates faster
+    const distanceFactor = 0.5 + 0.5 * (distance / (canvas.width * 0.6))
+
     // Random hue in blue/purple range with occasional red/green hints
     const baseHue =
       Math.random() < 0.7
         ? 220 + Math.random() * 60 // blues and purples
         : Math.random() * 60 // occasional reds/oranges/yellows
 
-    nebulae.push({ x, y, size, baseHue })
+    nebulae.push({ x, y, size, baseHue, distanceFactor })
   }
 
   // Initialize background stars - same count as asteroids
   for (let i = 0; i < asteroidCount; i++) {
+    const distance = Math.random() * canvas.width * 0.7 // Random distance from center
+    const angle = Math.random() * Math.PI * 2
+    const x = holeX + Math.cos(angle) * distance
+    const y = holeY + Math.sin(angle) * distance
+
+    // Distance factor for stars (0.6 to 1.2) - closer stars rotate faster
+    const distanceFactor = 0.6 + 0.6 * (distance / (canvas.width * 0.7))
+
     stars.push({
-      x: Math.random() * canvas.width,
-      y: Math.random() * canvas.height,
+      x,
+      y,
       phase: Math.random() * Math.PI * 2,
       brightness: 0.3 + Math.random() * 0.4,
-      trail: 6 + Math.random() * 8
+      trail: 6 + Math.random() * 8,
+      distanceFactor
     })
   }
 
@@ -327,6 +344,20 @@ interface Spaceship {
 
     // Draw static nebula-like effects
     for (const nebula of nebulae) {
+      // Save current context state before rotation
+      ctx.save()
+
+      // Translate to hole center (rotation pivot)
+      ctx.translate(holeX, holeY)
+
+      // Apply rotation around black hole - use distance factor for differential rotation
+      // Nebulae farther from center rotate slower (higher distance factor means slower rotation)
+      const nebulaeRotation = backgroundRotation / (nebula.distanceFactor || 1.0)
+      ctx.rotate(nebulaeRotation)
+
+      // Translate back to origin
+      ctx.translate(-holeX, -holeY)
+
       // Create radial gradient for nebula
       const nebulaGradient = ctx.createRadialGradient(nebula.x, nebula.y, 0, nebula.x, nebula.y, nebula.size)
 
@@ -339,7 +370,13 @@ interface Spaceship {
       ctx.beginPath()
       ctx.arc(nebula.x, nebula.y, nebula.size, 0, Math.PI * 2)
       ctx.fill()
+
+      // Restore context to pre-rotation state
+      ctx.restore()
     }
+
+    // Increment background rotation (extremely slow counter-clockwise rotation)
+    backgroundRotation -= 0.00003
 
     // Draw black hole with concentric circles
     // Start with outer glow effect (draw from outside in)
@@ -691,6 +728,17 @@ interface Spaceship {
     // After drawing everything else, draw stars LAST to ensure they're visible
     for (let i = 0; i < stars.length; i++) {
       const star = stars[i]
+
+      // Save context state
+      ctx.save()
+
+      // Apply rotation with distance factor for parallax effect
+      // Stars farther from center rotate slower (higher distance factor means slower rotation)
+      ctx.translate(holeX, holeY)
+      const starRotation = backgroundRotation / (star.distanceFactor || 1.0)
+      ctx.rotate(starRotation)
+      ctx.translate(-holeX, -holeY)
+
       // Calculate distance from black hole center
       const distFromCenter = Math.sqrt(Math.pow(star.x - holeX, 2) + Math.pow(star.y - holeY, 2))
 
@@ -703,6 +751,9 @@ interface Spaceship {
         // Slowly adjust phase
         star.phase += 0.001
       }
+
+      // Restore context
+      ctx.restore()
     }
 
     // Draw and update shooting stars
